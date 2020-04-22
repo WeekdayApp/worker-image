@@ -1,0 +1,32 @@
+service:
+  name: yack-worker-image
+
+plugins:
+  - serverless-webpack
+
+provider:
+  name: aws
+  runtime: nodejs10.x
+  region: eu-central-1
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - sqs:SendMessage
+      Resource:
+        - Fn::GetAtt: [ receiverQueueImage, Arn ]
+
+functions:
+  receiver:
+    handler: handler.receiver
+    events:
+      - sqs:
+          arn:
+            Fn::GetAtt:
+              - receiverQueueImage
+              - Arn
+resources:
+  Resources:
+    receiverQueueImage:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: receiverQueueImage
