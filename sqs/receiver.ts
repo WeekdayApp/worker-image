@@ -8,7 +8,7 @@ const Bucket: string = process.env.AWS_S3_BUCKET
 const accessKeyId: string = process.env.AWS_S3_ACCESS_KEY_ID
 const secretAccessKey: string = process.env.AWS_S3_SECRET_ACCESS_KEY
 const endpoint: any = new AWS.Endpoint(process.env.AWS_S3_ENDPOINT)
-const partSize: number = 10 * 1024 * 1024
+const partSize: number = 20 * 1024 * 1024
 const queueSize: number = 10
 
 const receiver: SQSHandler = async (event) => {
