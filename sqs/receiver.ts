@@ -22,10 +22,10 @@ const receiver: SQSHandler = async (event) => {
 
       // Setup the variables
       const uri: string = messageAttributes['uri'].stringValue;
-      const mime: any = JSON.parse(messageAttributes['mime'].stringValue);
-      const channelId: any = JSON.parse(messageAttributes['channelId'].stringValue);
-      const messageId: any = JSON.parse(messageAttributes['messageId'].stringValue);
-      const attachmentId: any = JSON.parse(messageAttributes['attachmentId'].stringValue);
+      const mime: string = messageAttributes['mime'].stringValue;
+      const channelId: string = messageAttributes['channelId'].stringValue;
+      const messageId: string = messageAttributes['messageId'].stringValue;
+      const attachmentId: string = messageAttributes['attachmentId'].stringValue;
 
       // Create our image
       const image: any = await Jimp.read(uri)
