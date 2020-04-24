@@ -9,3 +9,4 @@ jspm_packages
 .webpack
 node_modules
 .DS_Store
+lib

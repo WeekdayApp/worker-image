@@ -5,16 +5,23 @@
   "main": "sender.js",
   "scripts": {
     "lint": "tslint -p tsconfig.json -c tslint.json",
-    "tsc": "tsc -p tsconfig.json"
+    "build": "tsc -p tsconfig.json"
   },
   "dependencies": {
     "aws-lambda": "^0.1.2",
-    "aws-sdk": "^2.553.0",
-    "source-map-support": "^0.5.10"
+    "aws-sdk": "^2.662.0",
+    "axios": "^0.19.2",
+    "jimp": "^0.10.3",
+    "source-map-support": "^0.5.10",
+    "uuid": "^7.0.3"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.17",
+    "@types/aws-sdk": "^2.7.0",
+    "@types/axios": "^0.14.0",
+    "@types/jimp": "^0.2.28",
     "@types/node": "^10.14.22",
+    "@types/uuid": "^7.0.3",
     "eslint": "^6.6.0",
     "serverless-webpack": "^5.2.0",
     "ts-loader": "^5.3.3",
