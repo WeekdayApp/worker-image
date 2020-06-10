@@ -11,93 +11,92 @@ const endpoint: any = new AWS.Endpoint(process.env.AWS_S3_ENDPOINT)
 const partSize: number = 20 * 1024 * 1024
 const queueSize: number = 10
 
-const receiver: SQSHandler = async (event: SQSEvent) => {
-  try {
-    console.log('SQSHandler Invoked')
+const receiver: SQSHandler = async (event: SQSEvent): Promise<any> => {
+  console.log('SQSHandler Invoked')
 
-    for (const record of event.Records) {
-      const messageAttributes: SQSMessageAttributes = record.messageAttributes;
+  for (const record of event.Records) {
+    const messageAttributes: SQSMessageAttributes = record.messageAttributes;
 
-      // Debug
-      console.log('SQSHandler messageId: ', record.messageId);
-      console.log('SQSHandler Attributtes: ', messageAttributes);
-      console.log('SQSHandler Body: ', record.body);
+    // Debug
+    console.log('SQSHandler messageId: ', record.messageId);
+    console.log('SQSHandler Attributtes: ', messageAttributes);
+    console.log('SQSHandler Body: ', record.body);
 
-      // Setup the variables
-      const uri: string = messageAttributes['uri'].stringValue;
-      const mime: string = messageAttributes['mime'].stringValue;
-      const channelId: string = messageAttributes['channelId'].stringValue;
-      const messageId: string = messageAttributes['messageId'].stringValue;
-      const attachmentId: string = messageAttributes['attachmentId'].stringValue;
+    // Setup the variables
+    const uri: string = messageAttributes['uri'].stringValue;
+    const mime: string = messageAttributes['mime'].stringValue;
+    const channelId: string = messageAttributes['channelId'].stringValue;
+    const messageId: string = messageAttributes['messageId'].stringValue;
+    const attachmentId: string = messageAttributes['attachmentId'].stringValue;
 
-      // Create our image
-      const image: any = await Jimp.read(uri)
-      const buffer : any= await image
-        .resize(256, 256)
-        .quality(60)
-        .getBufferAsync(image.getMIME())
-      const name: string = uri.split('/')[uri.split('/').length - 1]
-      const Key: string = channelId + '/preview/' + uuidv1() + '-preview.' + name
-      const Body: any = buffer
+    // Create our image
+    const image: any = await Jimp.read(uri)
+    const buffer : any= await image
+      .resize(256, 256)
+      .quality(60)
+      .getBufferAsync(image.getMIME())
+    const name: string = uri.split('/')[uri.split('/').length - 1]
+    const Key: string = channelId + '/preview/' + uuidv1() + '-preview.' + name
+    const Body: any = buffer
 
-      // Authenticate with S3
-      const s3: any = new AWS.S3({
-        s3BucketEndpoint: true,
-        endpoint,
-        accessKeyId,
-        secretAccessKey,
-      })
+    // Authenticate with S3
+    const s3: any = new AWS.S3({
+      s3BucketEndpoint: true,
+      endpoint,
+      accessKeyId,
+      secretAccessKey,
+    })
 
-      // Create the S3 config values (10 MB)
-      const options: any = {
-        partSize,
-        queueSize,
-        ContentType: mime,
-        ACL: 'public-read',
-      }
-
-      // Set up our S3 params object to use in our request
-      const params: any = {
-        Bucket,
-        Key,
-        Body,
-        ACL: 'public-read',
-        CORSConfiguration: {
-          CORSRules: [
-            {
-              AllowedHeaders: ['*'],
-              AllowedMethods: ['GET', 'PUT', 'POST', 'DELETE', 'HEAD'],
-              AllowedOrigins: ['*'],
-              MaxAgeSeconds: 3000,
-            },
-          ],
-        },
-      }
-
-      // Do the actual upload
-      await new Promise((resolve, reject) => {
-        s3.upload(params, options, (err, data) => {
-          if (err) reject(err);
-          if (!data.Location) reject('No location data');
-
-          axios.post(`${process.env.API_PATH}/v1/upload/message_attachment_preview`,
-            {
-              channelId,
-              messageId,
-              attachmentId,
-              preview: data.Location
-            },
-            {
-              headers: { 'Content-Type': 'application/json' },
-            }
-          )
-          .then((result) => resolve(result))
-          .catch((error) => reject(error))
-        })
-      })
+    // Create the S3 config values (10 MB)
+    const options: any = {
+      partSize,
+      queueSize,
+      ContentType: mime,
+      ACL: 'public-read',
     }
-  } catch (error) {
-    console.log(error);
+
+    // Set up our S3 params object to use in our request
+    const params: any = {
+      Bucket,
+      Key,
+      Body,
+      ACL: 'public-read',
+      CORSConfiguration: {
+        CORSRules: [
+          {
+            AllowedHeaders: ['*'],
+            AllowedMethods: ['GET', 'PUT', 'POST', 'DELETE', 'HEAD'],
+            AllowedOrigins: ['*'],
+            MaxAgeSeconds: 3000,
+          },
+        ],
+      },
+    }
+
+    // Do the actual upload
+    const promise = new Promise((resolve, reject) => {
+      s3.upload(params, options, (err, data) => {
+        if (err) reject(err);
+        if (!data.Location) reject('No location data');
+
+        axios.post(`${process.env.API_PATH}/v1/upload/message_attachment_preview`,
+          {
+            channelId,
+            messageId,
+            attachmentId,
+            preview: data.Location
+          },
+          {
+            headers: { 'Content-Type': 'application/json' },
+          }
+        )
+        .then((result) => resolve(result))
+        .catch((error) => reject(error))
+      })
+    })
+
+    // Return
+    return promise
   }
 };
 
