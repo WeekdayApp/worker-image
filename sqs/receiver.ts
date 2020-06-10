@@ -1,4 +1,5 @@
 import { SQSHandler, SQSMessageAttributes, SQSEvent } from 'aws-lambda';
+
 import AWS from 'aws-sdk'
 import uuidv1 from 'uuid/v1'
 import Jimp from 'jimp'
@@ -12,9 +13,10 @@ const partSize: number = 20 * 1024 * 1024
 const queueSize: number = 10
 
 const receiver: SQSHandler = async (event: SQSEvent): Promise<any> => {
-  console.log('SQSHandler Invoked')
+  console.log('SQSHandler Invoked - v13')
 
-  for (const record of event.Records) {
+  try {
+    const record = event.Records[0]
     const messageAttributes: SQSMessageAttributes = record.messageAttributes;
 
     // Debug
@@ -29,15 +31,16 @@ const receiver: SQSHandler = async (event: SQSEvent): Promise<any> => {
     const messageId: string = messageAttributes['messageId'].stringValue;
     const attachmentId: string = messageAttributes['attachmentId'].stringValue;
 
+    console.log(uri, mime, channelId, messageId, attachmentId)
+
     // Create our image
     const image: any = await Jimp.read(uri)
-    const buffer : any= await image
-      .resize(256, 256)
-      .quality(60)
-      .getBufferAsync(image.getMIME())
+    const buffer : any = await image.resize(256, 256).quality(60).getBufferAsync(image.getMIME())
     const name: string = uri.split('/')[uri.split('/').length - 1]
     const Key: string = channelId + '/preview/' + uuidv1() + '-preview.' + name
     const Body: any = buffer
+
+    console.log(Key, Body)
 
     // Authenticate with S3
     const s3: any = new AWS.S3({
@@ -74,29 +77,28 @@ const receiver: SQSHandler = async (event: SQSEvent): Promise<any> => {
     }
 
     // Do the actual upload
-    const promise = new Promise((resolve, reject) => {
+    const data: any = await new Promise((resolve, reject) => {
       s3.upload(params, options, (err, data) => {
         if (err) reject(err);
         if (!data.Location) reject('No location data');
 
-        axios.post(`${process.env.API_PATH}/v1/upload/message_attachment_preview`,
-          {
-            channelId,
-            messageId,
-            attachmentId,
-            preview: data.Location
-          },
-          {
-            headers: { 'Content-Type': 'application/json' },
-          }
-        )
-        .then((result) => resolve(result))
-        .catch((error) => reject(error))
+        resolve(data);
       })
     })
 
-    // Return
-    return promise
+    console.log(data)
+
+    await axios.post(`${process.env.API_PATH}/v1/upload/message_attachment_preview`, {
+      channelId,
+      messageId,
+      attachmentId,
+      preview: data.Location
+    }, { headers: { 'Content-Type': 'application/json' } })
+
+    return true
+  } catch (e) {
+    console.log(e)
+    return false
   }
 };
 
