@@ -13,7 +13,7 @@ const partSize: number = 20 * 1024 * 1024
 const queueSize: number = 10
 
 const receiver: SQSHandler = async (event: SQSEvent, context: any): Promise<any> => {
-  console.log('SQSHandler Invoked - v17')
+  console.log('SQSHandler Invoked - v18')
 
   try {
     const record = event.Records[0]
@@ -92,7 +92,7 @@ const receiver: SQSHandler = async (event: SQSEvent, context: any): Promise<any>
       channelId,
       messageId,
       attachmentId,
-      preview: 'https://yack.app/icon.svg'//data.Location
+      preview: s3data.Location
     })
 
     const postoptions = {
