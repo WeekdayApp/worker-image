@@ -1,4 +1,4 @@
-import { SQSHandler, SQSMessageAttributes } from 'aws-lambda';
+import { SQSHandler, SQSMessageAttributes, SQSEvent } from 'aws-lambda';
 import AWS from 'aws-sdk'
 import uuidv1 from 'uuid/v1'
 import Jimp from 'jimp'
@@ -11,14 +11,17 @@ const endpoint: any = new AWS.Endpoint(process.env.AWS_S3_ENDPOINT)
 const partSize: number = 20 * 1024 * 1024
 const queueSize: number = 10
 
-const receiver: SQSHandler = async (event) => {
+const receiver: SQSHandler = async (event: SQSEvent) => {
   try {
+    console.log('SQSHandler Invoked')
+
     for (const record of event.Records) {
       const messageAttributes: SQSMessageAttributes = record.messageAttributes;
 
       // Debug
-      console.log('Attributtes: ', messageAttributes);
-      console.log('Body: ', record.body);
+      console.log('SQSHandler messageId: ', record.messageId);
+      console.log('SQSHandler Attributtes: ', messageAttributes);
+      console.log('SQSHandler Body: ', record.body);
 
       // Setup the variables
       const uri: string = messageAttributes['uri'].stringValue;
