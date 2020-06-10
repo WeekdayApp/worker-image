@@ -3,7 +3,7 @@ import { SQSHandler, SQSMessageAttributes, SQSEvent } from 'aws-lambda';
 import AWS from 'aws-sdk'
 import uuidv1 from 'uuid/v1'
 import Jimp from 'jimp'
-import axios from 'axios'
+const https = require('https')
 
 const Bucket: string = process.env.AWS_S3_BUCKET
 const accessKeyId: string = process.env.AWS_S3_ACCESS_KEY_ID
@@ -12,8 +12,8 @@ const endpoint: any = new AWS.Endpoint(process.env.AWS_S3_ENDPOINT)
 const partSize: number = 20 * 1024 * 1024
 const queueSize: number = 10
 
-const receiver: SQSHandler = async (event: SQSEvent): Promise<any> => {
-  console.log('SQSHandler Invoked - v13')
+const receiver: SQSHandler = async (event: SQSEvent, context: any): Promise<any> => {
+  console.log('SQSHandler Invoked - v17')
 
   try {
     const record = event.Records[0]
@@ -39,8 +39,6 @@ const receiver: SQSHandler = async (event: SQSEvent): Promise<any> => {
     const name: string = uri.split('/')[uri.split('/').length - 1]
     const Key: string = channelId + '/preview/' + uuidv1() + '-preview.' + name
     const Body: any = buffer
-
-    console.log(Key, Body)
 
     // Authenticate with S3
     const s3: any = new AWS.S3({
@@ -76,8 +74,10 @@ const receiver: SQSHandler = async (event: SQSEvent): Promise<any> => {
       },
     }
 
+    console.log(Key, Body, s3, options, params)
+
     // Do the actual upload
-    const data: any = await new Promise((resolve, reject) => {
+    const s3data: any = await new Promise((resolve, reject) => {
       s3.upload(params, options, (err, data) => {
         if (err) reject(err);
         if (!data.Location) reject('No location data');
@@ -86,14 +86,43 @@ const receiver: SQSHandler = async (event: SQSEvent): Promise<any> => {
       })
     })
 
-    console.log(data)
+    console.log(s3data)
 
-    await axios.post(`${process.env.API_PATH}/v1/upload/message_attachment_preview`, {
+    const postdata = JSON.stringify({
       channelId,
       messageId,
       attachmentId,
-      preview: data.Location
-    }, { headers: { 'Content-Type': 'application/json' } })
+      preview: 'https://yack.app/icon.svg'//data.Location
+    })
+
+    const postoptions = {
+      hostname: process.env.API_PATH.replace('https://',''),
+      port: 443,
+      path: '/v1/upload/message_attachment_preview',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': postdata.length
+      }
+    }
+
+    const httpdata: any = await new Promise((resolve, reject) => {
+      var request = https.request(postoptions, (res) => {
+          const body = [];
+
+          res.setEncoding('utf8');
+          res.on('data', (chunk) => body.push(chunk));
+          res.on('end', () => resolve(body.join('')));
+      });
+
+      request.on('error', (err) => reject(err))
+      request.write(postdata);
+      request.end();
+    })
+
+    console.log(httpdata, postoptions)
+
+    context.done()
 
     return true
   } catch (e) {
