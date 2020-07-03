@@ -1,5 +1,5 @@
 {
-  "name": "yack-worker-image",
+  "name": "weekday-worker-image",
   "version": "1.0.0",
   "description": "This worker creates image thumbnail for messages",
   "main": "sender.js",
